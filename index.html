@@ -66,9 +66,16 @@
 
       <div id="areaHasil" class="d-none">
         <div class="result-card">
+          
+          <div class="text-center border-bottom border-2 pb-3 mb-3">
+            <span class="badge bg-primary px-3 py-2 mb-2" style="font-size: 12px; letter-spacing: 1px;" id="resTanggal">Tanggal Kedatangan</span>
+            <h1 class="display-1 fw-bold text-dark mb-0" style="line-height: 1;" id="resNo">0</h1>
+            <p class="text-muted small fw-bold text-uppercase mb-0 mt-1">Nomor Antrean</p>
+          </div>
+
           <div class="text-center mb-3">
-            <h5 class="fw-bold text-dark mb-0" id="resNama">Nama Siswa</h5>
-            <div class="text-muted small" id="resSekolah">Asal Sekolah</div>
+            <h4 class="fw-bold text-dark mb-0" id="resNama">Nama Siswa</h4>
+            <div class="text-muted" style="font-size: 15px;" id="resSekolah">Asal Sekolah</div>
           </div>
           
           <div style="background: #f8f9fa; padding: 12px; border-radius: 10px; border: 1px solid #ddd; text-align: center;">
@@ -100,8 +107,9 @@
   </div>
 
   <script>
-    // MASUKKAN URL API GOOGLE SCRIPT BAPAK DI SINI !!
-    const API_URL = "https://script.google.com/macros/s/AKfycbz4BrwrPHLRmqDYeQS-R3Ufl50smiZYftR2RWCWZJamjutXG3BnTKPwfxo2ykcBlzkIwA/exec";
+    // ===============================================
+    // WAJIB GANTI DENGAN URL API GOOGLE SCRIPT BAPAK
+    const API_URL = "URL_GOOGLE_SCRIPT_EXEC_DISINI";
     // ===============================================
 
     const AUTO_LOGOUT_TIME = 3600000; 
@@ -164,7 +172,6 @@
         html5QrcodeScanner = new Html5Qrcode("reader");
       }
 
-      // Live Video Scanner (Otomatis tanpa klik)
       html5QrcodeScanner.start(
         { facingMode: "environment" }, 
         { fps: 10, qrbox: { width: 250, height: 250 } }, 
@@ -192,7 +199,6 @@
 
       Swal.fire({ title: 'Menarik Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-      // Gantikan google.script.run dengan API FETCH JAVASCRIPT
       const dataPOST = new URLSearchParams();
       dataPOST.append('action', 'cekQr');
       dataPOST.append('qrText', decodedText);
@@ -210,6 +216,10 @@
           document.getElementById('areaHasil').classList.remove('d-none');
           
           currentRowIdx = res.row;
+          
+          // INJEKSI DATA KE TAMPILAN BARU
+          document.getElementById('resTanggal').innerText = res.tgl;
+          document.getElementById('resNo').innerText = res.no;
           document.getElementById('resNama').innerText = res.nama;
           document.getElementById('resSekolah').innerText = res.sekolah;
           
