@@ -19,9 +19,9 @@
     .navbar { background-color: #0d6efd; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .navbar-title { font-weight: bold; font-size: 16px; margin: 0; }
     
-    .camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    #reader { width: 100%; border-radius: 12px; }
-    .btn-flip { position: absolute; bottom: 15px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10; }
+    .camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    #reader { width: 100%; background: #000; }
+    .btn-flip { position: absolute; bottom: 65px; right: 15px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10; }
 
     .result-card { background: #fff; border-radius: 15px; padding: 20px; margin-top: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .badge-status { font-size: 14px; padding: 8px 12px; border-radius: 8px; font-weight: bold; width: 100%; display: block; text-align: center; margin-top: 10px; }
@@ -60,13 +60,30 @@
       </div>
 
       <div id="areaKamera" class="camera-container">
-        <div id="reader"></div>
-        <button class="btn-flip" onclick="tukarKamera()"><i class="fa-solid fa-camera-rotate"></i></button>
+        
+        <div id="kameraStandby" class="text-center p-5">
+          <i class="fa-solid fa-camera-retro text-secondary mb-3" style="font-size: 60px;"></i>
+          <h5 class="fw-bold text-dark mb-2">Mode Siaga</h5>
+          <p class="text-muted small mb-4">Kamera dimatikan untuk menghemat baterai perangkat.</p>
+          <button class="btn btn-primary btn-lg fw-bold w-100 shadow-sm" onclick="mulaiKameraLansung()">
+            <i class="fa-solid fa-video"></i> Nyalakan Kamera
+          </button>
+        </div>
+
+        <div id="readerWrapper" class="d-none">
+          <div id="reader"></div>
+          <button class="btn-flip" onclick="tukarKamera()"><i class="fa-solid fa-camera-rotate"></i></button>
+          <div class="p-2 bg-light">
+            <button class="btn btn-outline-danger w-100 fw-bold" onclick="resetKeStandby()">
+              <i class="fa-solid fa-video-slash"></i> Tutup Kamera
+            </button>
+          </div>
+        </div>
+
       </div>
 
       <div id="areaHasil" class="d-none">
         <div class="result-card">
-          
           <div class="text-center border-bottom border-2 pb-3 mb-3">
             <span class="badge bg-primary px-3 py-2 mb-2" style="font-size: 12px; letter-spacing: 1px;" id="resTanggal">Tanggal Kedatangan</span>
             <h1 class="display-1 fw-bold text-dark mb-0" style="line-height: 1;" id="resNo">0</h1>
@@ -100,7 +117,7 @@
               <button class="btn btn-danger w-100 btn-eksekusi" onclick="simpanStatus('Selesai - Tidak Valid')"><i class="fa-solid fa-times-circle"></i> INVALID</button>
             </div>
           </div>
-          <button class="btn w-100 mt-2 fw-bold btn-batal p-3 rounded-3" onclick="resetScanner()"><i class="fa-solid fa-arrow-left"></i> Batal & Scan Lagi</button>
+          <button class="btn w-100 mt-2 fw-bold btn-batal p-3 rounded-3" onclick="resetKeStandby()"><i class="fa-solid fa-arrow-left"></i> Batal / Kembali ke Siaga</button>
         </div>
       </div>
     </div>
@@ -155,18 +172,23 @@
       document.getElementById('loginSection').classList.add('d-none');
       document.getElementById('dashboardSection').classList.remove('d-none');
       resetTimer();
-      mulaiKameraLansung();
+      // PERUBAHAN: Masuk dashboard tidak langsung nyalakan kamera, tapi ke mode siaga
+      resetKeStandby();
     }
 
     function logoutScanner() {
       localStorage.removeItem('scanLogin');
-      if(html5QrcodeScanner) html5QrcodeScanner.stop().catch(e => {});
+      if(html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+        html5QrcodeScanner.stop().catch(e => {});
+      }
       location.reload();
     }
 
+    // Fungsi menghidupkan kamera
     function mulaiKameraLansung() {
       document.getElementById('areaHasil').classList.add('d-none');
-      document.getElementById('areaKamera').classList.remove('d-none');
+      document.getElementById('kameraStandby').classList.add('d-none');
+      document.getElementById('readerWrapper').classList.remove('d-none');
 
       if (!html5QrcodeScanner) {
         html5QrcodeScanner = new Html5Qrcode("reader");
@@ -180,6 +202,7 @@
         Html5Qrcode.getCameras().then(devices => { if (devices) cameraList = devices; });
       }).catch(err => {
         Swal.fire('Izin Kamera Ditolak', 'Buka setelan browser dan izinkan akses kamera untuk situs ini.', 'error');
+        resetKeStandby();
       });
     }
 
@@ -193,7 +216,9 @@
     }
 
     function onScanSuccess(decodedText) {
+      // 1. Matikan kamera agar hemat baterai
       html5QrcodeScanner.stop();
+      
       bunyiBeep();
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
@@ -212,12 +237,12 @@
       .then(res => {
         Swal.close();
         if (res.status === 'success') {
-          document.getElementById('areaKamera').classList.add('d-none');
+          // Sembunyikan area kamera, tampilkan hasil
+          document.getElementById('readerWrapper').classList.add('d-none');
           document.getElementById('areaHasil').classList.remove('d-none');
           
           currentRowIdx = res.row;
           
-          // INJEKSI DATA KE TAMPILAN BARU
           document.getElementById('resTanggal').innerText = res.tgl;
           document.getElementById('resNo').innerText = res.no;
           document.getElementById('resNama').innerText = res.nama;
@@ -234,10 +259,10 @@
 
         } else {
           Swal.fire({ icon: 'warning', title: 'QR Tidak Valid!', text: res.message, timer: 3000, showConfirmButton: false })
-          .then(() => { mulaiKameraLansung(); });
+          .then(() => { resetKeStandby(); });
         }
       })
-      .catch(err => { Swal.fire('Error', 'Gagal menghubungi server.', 'error'); mulaiKameraLansung(); });
+      .catch(err => { Swal.fire('Error', 'Gagal menghubungi server.', 'error'); resetKeStandby(); });
     }
 
     function simpanStatus(statusBaru) {
@@ -260,14 +285,23 @@
           scanCounter++;
           document.getElementById('scanCount').innerText = scanCounter;
           Swal.fire({ icon: 'success', title: 'Tersimpan!', text: 'Status diubah ke ' + statusBaru, timer: 1200, showConfirmButton: false })
-          .then(() => { resetScanner(); });
+          .then(() => { resetKeStandby(); }); // Kembali ke mode siaga
         } else { Swal.fire('Gagal', res.message, 'error'); }
       });
     }
 
-    function resetScanner() {
+    // Fungsi mengembalikan semua ke mode hemat baterai
+    function resetKeStandby() {
       currentRowIdx = 0;
-      mulaiKameraLansung();
+      
+      // Matikan kamera jika masih hidup
+      if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+        html5QrcodeScanner.stop().catch(e => console.log(e));
+      }
+      
+      document.getElementById('areaHasil').classList.add('d-none');
+      document.getElementById('readerWrapper').classList.add('d-none');
+      document.getElementById('kameraStandby').classList.remove('d-none');
     }
 
     function bunyiBeep() {
